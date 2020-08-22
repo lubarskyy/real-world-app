@@ -1,10 +1,30 @@
-import express from "express";
+import express from 'express';
+import bodyParser from 'body-parser';
+import { Controller } from './interfaces';
 
-const app = express();
-const port = 3000;
+export class App {
+  public app: express.Application;
+  public port: number;
 
-app.get("/", (_, res) => {
-  return res.send("Hello World");
-});
+  constructor(controllers: Controller[], port: number) {
+    this.app = express();
+    this.port = port;
 
-app.listen(port, () => console.log("Express app listening on port 3000"));
+    this.initializeMiddlewares();
+    this.initializeControllers(controllers);
+  }
+
+  private initializeMiddlewares(): void {
+    this.app.use(bodyParser.json());
+  }
+
+  private initializeControllers(controllers: Controller[]): void {
+    controllers.forEach((controller) => {
+      this.app.use('/api', controller.router);
+    });
+  }
+
+  public listen() {
+    this.app.listen(this.port, () => console.log(`Application initialized and is listening on port ${this.port}`));
+  }
+}

@@ -6,10 +6,10 @@
     // "lib": [],
     "outDir": "./build",
     "rootDir": "./",
-    "removeComments": true,
-    "strict": true,
     "baseUrl": "./src",
     "typeRoots": ["node_modules/@types"],
+    "strict": true,
+    "removeComments": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
