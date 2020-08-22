@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "incremental": true,
+    "target": "es5",
+    "module": "commonjs",
+    // "lib": [],
+    "outDir": "./build",
+    "rootDir": "./",
+    "removeComments": true,
+    "strict": true,
+    "baseUrl": "./src",
+    "typeRoots": ["node_modules/@types"],
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"]
+}

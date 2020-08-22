@@ -1,0 +1,29 @@
+{
+  "name": "real-world-app",
+  "version": "0.0.0",
+  "main": "build/app.js",
+  "repository": "git@github.com:lubarskyy/real-world-app.git",
+  "author": "Robert Lubarski <24817919+lubarskyy@users.noreply.github.com>",
+  "license": "MIT",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "devDependencies": {
+    "@commitlint/cli": "^9.1.2",
+    "@commitlint/config-conventional": "^9.1.2",
+    "husky": "^4.2.5",
+    "prettier": "^2.0.5"
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+    }
+  }
+}
