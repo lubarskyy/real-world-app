@@ -1,13 +1,12 @@
 {
   "compilerOptions": {
     "incremental": true,
-    "target": "es5",
+    "target": "es6",
     "module": "commonjs",
-    // "lib": [],
     "outDir": "./build",
     "rootDir": "./",
     "baseUrl": "./src",
-    "typeRoots": ["node_modules/@types"],
+    "typeRoots": ["node_modules/@types", "src/typings.d.ts"],
     "strict": true,
     "removeComments": true,
     "esModuleInterop": true,
