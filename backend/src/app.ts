@@ -1,30 +1,34 @@
 import express from 'express';
-import bodyParser from 'body-parser';
+import { errorMiddleware } from './middlewares';
 import { Controller } from './interfaces';
 
-export class App {
+export class Application {
   public app: express.Application;
-  public port: number;
+  public port: string;
 
-  constructor(controllers: Controller[], port: number) {
+  constructor(controllers: Controller[], middlewares: express.RequestHandler[], port: string) {
     this.app = express();
     this.port = port;
 
-    this.initializeMiddlewares();
+    this.initializeMiddlewares(middlewares);
     this.initializeControllers(controllers);
   }
 
   public listen(): void {
-    this.app.listen(this.port, () => console.log(`Express server initialized and is listening on port ${this.port}.`));
+    this.app.listen(Number(this.port), () =>
+      console.log(`Express server initialized and is listening on port ${this.port}.`),
+    );
   }
 
-  private initializeMiddlewares(): void {
-    this.app.use(bodyParser.json());
+  private initializeMiddlewares(middlewares: express.RequestHandler[]): void {
+    for (const middleware of middlewares) {
+      this.app.use(middleware);
+    }
   }
 
   private initializeControllers(controllers: Controller[]): void {
     for (const controller of controllers) {
-      this.app.use('/api', controller.router);
+      this.app.use('/api', controller.router, errorMiddleware);
     }
   }
 }

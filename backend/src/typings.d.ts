@@ -7,5 +7,6 @@ namespace NodeJS {
     POSTGRES_DB: string;
 
     EXPRESS_SERVER_PORT: string;
+    JWT_SECRET: string;
   }
 }
