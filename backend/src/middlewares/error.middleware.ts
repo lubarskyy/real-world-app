@@ -1,19 +1,20 @@
 import { ErrorRequestHandler } from 'express';
 import { ValidationError as PayloadValidationError } from 'express-validation';
 import { ValidationError as ConstraintsValidationError } from 'sequelize';
-
-// TODO: create HttpException
-// status code
-// message - enum?
+import { HttpException, HttpExceptionType } from '../exceptions';
 
 export const errorMiddleware: ErrorRequestHandler = (error, request, response, next) => {
   if (error instanceof PayloadValidationError) {
-    return response.status(error.statusCode).json(error);
+    return response.status(422).json({ type: HttpExceptionType.ValidationIssue, message: error.message });
   }
 
   if (error instanceof ConstraintsValidationError) {
-    return response.status(422).json(error);
+    return response.status(422).json({ type: HttpExceptionType.ValidationIssue, message: error.message });
   }
 
-  return response.status(500).json(error);
+  if (error instanceof HttpException) {
+    return response.status(error.status).json({ type: error.type, message: error.message });
+  }
+
+  return response.status(500).json({ type: HttpExceptionType.InternalError, message: error.message });
 };

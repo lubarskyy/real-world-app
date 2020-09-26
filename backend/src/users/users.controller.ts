@@ -3,6 +3,7 @@ import { validate } from 'express-validation';
 import { hash, compare } from 'bcrypt';
 import { sign } from 'jsonwebtoken';
 import { Controller } from '../interfaces';
+import { NotFoundException } from '../exceptions';
 import { User } from './user.model';
 import { reqisterUserValidation, loginUserValidation } from './user.validation';
 
@@ -55,7 +56,7 @@ export class UsersController implements Controller {
           ...user.createUserResponse(),
         });
       } else {
-        response.status(404).json();
+        next(new NotFoundException("User with provided credentails doesn't exist."));
       }
     } catch (error) {
       next(error);
