@@ -5,6 +5,7 @@ import { sign } from 'jsonwebtoken';
 import { Controller } from '../interfaces';
 import { NotFoundException } from '../exceptions';
 import { User } from './user.model';
+import { UserRegisterRequest, UserLoginRequest, UserResponse } from './user.types';
 import { reqisterUserValidation, loginUserValidation } from './user.validation';
 
 export class UsersController implements Controller {
@@ -24,8 +25,12 @@ export class UsersController implements Controller {
     return sign({ sub: user.id, name: user.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
   }
 
-  private registerUser: RequestHandler = async (request, response, next): Promise<void> => {
-    const { email, username, password } = request.body;
+  private registerUser: RequestHandler<{}, UserResponse, UserRegisterRequest> = async (
+    request,
+    response,
+    next,
+  ): Promise<void> => {
+    const { email, username, password } = request.body.user;
 
     try {
       const hashedPassword = await hash(password, 10);
@@ -33,16 +38,22 @@ export class UsersController implements Controller {
       const token = this.createJWTToken(user);
 
       response.send({
-        token,
-        ...user.createUserResponse(),
+        user: {
+          token,
+          ...user.createUserPayload(),
+        },
       });
     } catch (error) {
       next(error);
     }
   };
 
-  private loginUser: RequestHandler = async (request, response, next): Promise<void> => {
-    const { email, password } = request.body;
+  private loginUser: RequestHandler<{}, UserResponse, UserLoginRequest> = async (
+    request,
+    response,
+    next,
+  ): Promise<void> => {
+    const { email, password } = request.body.user;
 
     try {
       const user = await User.findOne({ where: { email } });
@@ -52,8 +63,10 @@ export class UsersController implements Controller {
         const token = this.createJWTToken(user);
 
         response.send({
-          token,
-          ...user.createUserResponse(),
+          user: {
+            token,
+            ...user.createUserPayload(),
+          },
         });
       } else {
         next(new NotFoundException("User with provided credentails doesn't exist."));

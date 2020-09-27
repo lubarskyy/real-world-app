@@ -1,6 +1,6 @@
 import { Sequelize, Model, DataTypes } from 'sequelize';
 
-type UserAttributes = {
+export type UserAttributes = {
   id: string;
   email: string;
   username: string;
@@ -9,21 +9,21 @@ type UserAttributes = {
   image?: string | null;
 };
 
-type UserCreationAttributes = Omit<UserAttributes, 'id'>;
-type UserCreationResponse = Omit<UserAttributes, 'password'>;
+export type UserCreationAttributes = Omit<UserAttributes, 'id'>;
+export type UserPayload = Omit<UserAttributes, 'password'>;
 
 export class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
   public id!: UserAttributes['id'];
   public email!: UserAttributes['email'];
   public username!: UserAttributes['username'];
   public password!: UserAttributes['password'];
-  public bio!: UserAttributes['bio'];
-  public image!: UserAttributes['image'];
+  public bio: UserAttributes['bio'];
+  public image: UserAttributes['image'];
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
-  public createUserResponse(): UserCreationResponse {
+  public createUserPayload(): UserPayload {
     return {
       id: this.id,
       email: this.email,

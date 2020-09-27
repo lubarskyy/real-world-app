@@ -1,6 +1,6 @@
 {
   "name": "real-world-app",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "main": "build/app.js",
   "repository": "git@github.com:lubarskyy/real-world-app.git",
   "author": "Robert Lubarski <24817919+lubarskyy@users.noreply.github.com>",
