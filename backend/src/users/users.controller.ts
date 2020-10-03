@@ -6,20 +6,8 @@ import { authMiddleware } from '../middlewares';
 import { Controller } from '../interfaces';
 import { NotFoundException } from '../exceptions';
 import { User } from './user.model';
-import { UserRegisterRequest, UserLoginRequest, UserResponse } from './user.types';
-import { reqisterUserValidation, loginUserValidation } from './user.validation';
-
-// PUT /api/user
-// Example request body:
-// {
-//   "user":{
-//     "email": "jake@jake.jake",
-//     "bio": "I like to skateboard",
-//     "image": "https://i.stack.imgur.com/xHWG8.jpg"
-//   }
-// }
-// Authentication required, returns the User
-// Accepted fields: email, username, password, image, bio
+import { UserRegisterRequest, UserLoginRequest, UserEditRequest, UserResponse } from './user.types';
+import { reqisterUserValidation, loginUserValidation, editUserValidation } from './user.validation';
 
 export class UsersController implements Controller {
   public path: Controller['path'] = '/users';
@@ -35,6 +23,7 @@ export class UsersController implements Controller {
     this.router.post(`${this.path}`, validate(reqisterUserValidation), this.registerUser);
     this.router.post(`${this.path}/login`, validate(loginUserValidation), this.loginUser);
     this.router.get(`${this.path}`, authMiddleware, this.getUser);
+    this.router.put(`${this.path}`, authMiddleware, validate(editUserValidation), this.editUser);
   }
 
   private registerUser: RequestHandler<never, UserResponse, UserRegisterRequest> = async (
@@ -99,6 +88,37 @@ export class UsersController implements Controller {
           user: {
             token: currentUser!.token,
             ...user.createUserPayload(),
+          },
+        });
+      } else {
+        next(new NotFoundException("User doesn't exist."));
+      }
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private editUser: RequestHandler<never, UserResponse, UserEditRequest> = async (
+    request,
+    response,
+    next,
+  ): Promise<void> => {
+    const { currentUser } = request;
+    const payload = request.body.user;
+
+    try {
+      const [updatedCount, updatedUsers] = await User.update(payload, {
+        where: { id: currentUser!.id },
+        returning: true,
+      });
+
+      if (updatedCount) {
+        const [updatedUser] = updatedUsers;
+
+        response.send({
+          user: {
+            token: currentUser!.token,
+            ...updatedUser.createUserPayload(),
           },
         });
       } else {

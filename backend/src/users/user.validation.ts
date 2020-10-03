@@ -1,5 +1,5 @@
 import { Joi } from 'express-validation';
-import { UserRegisterRequest, UserLoginRequest } from './user.types';
+import { UserRegisterRequest, UserLoginRequest, UserEditRequest } from './user.types';
 
 export const reqisterUserValidation = {
   body: Joi.object<UserRegisterRequest>({
@@ -16,6 +16,18 @@ export const loginUserValidation = {
     user: Joi.object<UserLoginRequest['user']>({
       email: Joi.string().email().required(),
       password: Joi.string().required(),
+    }).required(),
+  }),
+};
+
+export const editUserValidation = {
+  body: Joi.object<UserEditRequest>({
+    user: Joi.object<UserEditRequest['user']>({
+      email: Joi.string().email(),
+      username: Joi.string(),
+      password: Joi.string(),
+      bio: Joi.string(),
+      image: Joi.string(),
     }).required(),
   }),
 };

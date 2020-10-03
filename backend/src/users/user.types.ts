@@ -8,6 +8,10 @@ export type UserLoginRequest = {
   user: Pick<UserAttributes, 'email' | 'password'>;
 };
 
+export type UserEditRequest = {
+  user: Partial<Omit<UserAttributes, 'id'>>;
+};
+
 export type UserResponse = {
   user: UserPayload & {
     token: string;
