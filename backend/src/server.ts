@@ -1,12 +1,13 @@
 import bodyParser from 'body-parser';
 import { Application } from './app';
 import { Database } from './database';
-import { UsersController, initUserModel } from './users';
+import { AuthenticationService } from './services';
+import { initUserModel, UsersController } from './users';
 
 const initializers = [initUserModel];
 const database = new Database(initializers);
 
-const controllers = [new UsersController()];
+const controllers = [new UsersController(AuthenticationService)];
 const middlewares = [bodyParser.json()];
 
 const server = new Application(controllers, middlewares, process.env.EXPRESS_SERVER_PORT);

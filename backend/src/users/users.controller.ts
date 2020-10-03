@@ -1,31 +1,43 @@
 import { Router, RequestHandler } from 'express';
 import { validate } from 'express-validation';
 import { hash, compare } from 'bcrypt';
-import { sign } from 'jsonwebtoken';
+import { AuthenticationService } from '../services';
+import { authMiddleware } from '../middlewares';
 import { Controller } from '../interfaces';
 import { NotFoundException } from '../exceptions';
 import { User } from './user.model';
 import { UserRegisterRequest, UserLoginRequest, UserResponse } from './user.types';
 import { reqisterUserValidation, loginUserValidation } from './user.validation';
 
+// PUT /api/user
+// Example request body:
+// {
+//   "user":{
+//     "email": "jake@jake.jake",
+//     "bio": "I like to skateboard",
+//     "image": "https://i.stack.imgur.com/xHWG8.jpg"
+//   }
+// }
+// Authentication required, returns the User
+// Accepted fields: email, username, password, image, bio
+
 export class UsersController implements Controller {
   public path: Controller['path'] = '/users';
   public router: Controller['router'] = Router();
+  private authService: typeof AuthenticationService;
 
-  constructor() {
+  constructor(authService: typeof AuthenticationService) {
+    this.authService = authService;
     this.initializeRoutes();
   }
 
   private initializeRoutes(): void {
     this.router.post(`${this.path}`, validate(reqisterUserValidation), this.registerUser);
     this.router.post(`${this.path}/login`, validate(loginUserValidation), this.loginUser);
+    this.router.get(`${this.path}`, authMiddleware, this.getUser);
   }
 
-  private createJWTToken(user: User): string {
-    return sign({ sub: user.id, name: user.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
-  }
-
-  private registerUser: RequestHandler<{}, UserResponse, UserRegisterRequest> = async (
+  private registerUser: RequestHandler<never, UserResponse, UserRegisterRequest> = async (
     request,
     response,
     next,
@@ -35,7 +47,7 @@ export class UsersController implements Controller {
     try {
       const hashedPassword = await hash(password, 10);
       const user = await User.create({ email, username, password: hashedPassword });
-      const token = this.createJWTToken(user);
+      const token = await this.authService.createJWTToken({ sub: user.id, username: user.username });
 
       response.send({
         user: {
@@ -48,7 +60,7 @@ export class UsersController implements Controller {
     }
   };
 
-  private loginUser: RequestHandler<{}, UserResponse, UserLoginRequest> = async (
+  private loginUser: RequestHandler<never, UserResponse, UserLoginRequest> = async (
     request,
     response,
     next,
@@ -60,7 +72,7 @@ export class UsersController implements Controller {
       const isPasswordValid = user ? await compare(password, user.password) : false;
 
       if (user && isPasswordValid) {
-        const token = this.createJWTToken(user);
+        const token = await this.authService.createJWTToken({ sub: user.id, username: user.username });
 
         response.send({
           user: {
@@ -69,7 +81,28 @@ export class UsersController implements Controller {
           },
         });
       } else {
-        next(new NotFoundException("User with provided credentails doesn't exist."));
+        next(new NotFoundException("User with provided credentials doesn't exist."));
+      }
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private getUser: RequestHandler<never, UserResponse, never> = async (request, response, next): Promise<void> => {
+    const { currentUser } = request;
+
+    try {
+      const user = await User.findOne({ where: { id: currentUser!.id } });
+
+      if (user) {
+        response.send({
+          user: {
+            token: currentUser!.token,
+            ...user.createUserPayload(),
+          },
+        });
+      } else {
+        next(new NotFoundException("User doesn't exist."));
       }
     } catch (error) {
       next(error);

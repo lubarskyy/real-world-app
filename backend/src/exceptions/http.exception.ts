@@ -2,6 +2,7 @@ export enum HttpExceptionType {
   NotFound = 'NOT_FOUND',
   BadRequest = 'BAD_REQUEST',
   ValidationIssue = 'VALIDATION_ISSUE',
+  Unauthorized = 'UNAUTHORIZED',
   InternalError = 'INTERNAL_ERROR',
 }
 
