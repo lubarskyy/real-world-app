@@ -11,6 +11,7 @@ export type UserAttributes = {
 
 export type UserCreationAttributes = Omit<UserAttributes, 'id'>;
 export type UserPayload = Omit<UserAttributes, 'password'>;
+export type ProfilePayload = Pick<UserAttributes, 'username' | 'bio' | 'image'>;
 
 export class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
   public id!: UserAttributes['id'];
@@ -27,6 +28,14 @@ export class User extends Model<UserAttributes, UserCreationAttributes> implemen
     return {
       id: this.id,
       email: this.email,
+      username: this.username,
+      bio: this.bio,
+      image: this.image,
+    };
+  }
+
+  public createProfilePayload(): ProfilePayload {
+    return {
       username: this.username,
       bio: this.bio,
       image: this.image,

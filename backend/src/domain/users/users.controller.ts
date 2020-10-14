@@ -1,10 +1,10 @@
 import { Router, RequestHandler } from 'express';
 import { validate } from 'express-validation';
 import { hash, compare } from 'bcrypt';
-import { AuthenticationService } from '../services';
-import { authMiddleware } from '../middlewares';
-import { Controller } from '../interfaces';
-import { NotFoundException } from '../exceptions';
+import { AuthenticationService } from '../../services';
+import { authMiddleware } from '../../middlewares';
+import { Controller } from '../../interfaces';
+import { NotFoundException } from '../../exceptions';
 import { User } from './user.model';
 import { UserRegisterRequest, UserLoginRequest, UserEditRequest, UserResponse } from './user.types';
 import { reqisterUserValidation, loginUserValidation, editUserValidation } from './user.validation';

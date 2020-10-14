@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
-    "incremental": true,
+    "baseUrl": "./src",
     "target": "es6",
     "module": "commonjs",
-    "outDir": "./build",
     "rootDir": "./",
-    "baseUrl": "./src",
+    "outDir": "./build",
     "typeRoots": ["node_modules/@types", "src/typings.d.ts"],
+    "incremental": true,
     "strict": true,
     "removeComments": true,
     "esModuleInterop": true,

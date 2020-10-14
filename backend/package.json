@@ -1,7 +1,7 @@
 {
   "name": "real-world-app-backend",
   "version": "0.1.0",
-  "main": "app.ts",
+  "main": "server.ts",
   "repository": "git@github.com:lubarskyy/real-world-app.git",
   "author": "Robert Lubarski <24817919+lubarskyy@users.noreply.github.com>",
   "license": "MIT",

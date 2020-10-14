@@ -12,8 +12,8 @@ declare namespace NodeJS {
 }
 
 declare namespace Express {
-  import('./users/user.model');
-  import { UserAttributes } from './users/user.model';
+  import('./domain/users');
+  import { UserAttributes } from './domain/users';
 
   export interface Request {
     currentUser?: {

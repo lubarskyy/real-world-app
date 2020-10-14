@@ -1,6 +1,6 @@
 import { sign, verify } from 'jsonwebtoken';
 import { isObject } from '../helpers';
-import { User } from '../users';
+import { User } from '../domain/users';
 
 type TokenPayloadBase = {
   sub: User['id'];
