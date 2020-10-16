@@ -62,6 +62,7 @@ export const initUserModel = (sequelize: Sequelize): void => {
       },
       username: {
         type: DataTypes.STRING(30),
+        unique: true,
         allowNull: false,
         validate: {
           notEmpty: true,
@@ -81,6 +82,6 @@ export const initUserModel = (sequelize: Sequelize): void => {
         type: DataTypes.STRING,
       },
     },
-    { sequelize },
+    { sequelize, tableName: 'Users' },
   );
 };

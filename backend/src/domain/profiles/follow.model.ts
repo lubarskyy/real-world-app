@@ -41,6 +41,6 @@ export const initFollowModel = (sequelize: Sequelize): void => {
         },
       },
     },
-    { sequelize },
+    { sequelize, tableName: 'Follows' },
   );
 };
