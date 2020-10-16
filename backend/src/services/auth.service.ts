@@ -8,13 +8,13 @@ type TokenPayloadBase = {
   exp: number;
 };
 
-type TokenPayload = {
+type TokenPayloadCustom = {
   username: User['username'];
 };
 
-type TokenPayloadSign = Pick<TokenPayloadBase, 'sub'> & TokenPayload;
+type TokenPayloadSign = Pick<TokenPayloadBase, 'sub'> & TokenPayloadCustom;
 
-type TokenPayloadDecode = TokenPayloadBase & TokenPayload;
+type TokenPayloadDecode = TokenPayloadBase & TokenPayloadCustom;
 
 const isToken = (value: any): value is TokenPayloadDecode => isObject(value) && 'sub' in value && 'username' in value;
 

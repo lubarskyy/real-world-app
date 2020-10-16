@@ -1,17 +1,19 @@
 import { Router, RequestHandler } from 'express';
 import { validate } from 'express-validation';
 import { hash, compare } from 'bcrypt';
-import { AuthenticationService } from '../../services';
 import { authMiddleware } from '../../middlewares';
-import { Controller } from '../../interfaces';
 import { NotFoundException } from '../../exceptions';
 import { User } from './user.model';
-import { UserRegisterRequest, UserLoginRequest, UserEditRequest, UserResponse } from './user.types';
 import { reqisterUserValidation, loginUserValidation, editUserValidation } from './user.validation';
+
+import type { AuthenticationService } from '../../services';
+import type { Controller } from '../../interfaces';
+import type { UserRegisterRequest, UserLoginRequest, UserEditRequest, UserResponse } from './user.types';
 
 export class UsersController implements Controller {
   public path: Controller['path'] = '/users';
   public router: Controller['router'] = Router();
+
   private authService: typeof AuthenticationService;
 
   constructor(authService: typeof AuthenticationService) {
@@ -22,8 +24,8 @@ export class UsersController implements Controller {
   private initializeRoutes(): void {
     this.router.post(`${this.path}`, validate(reqisterUserValidation), this.registerUser);
     this.router.post(`${this.path}/login`, validate(loginUserValidation), this.loginUser);
-    this.router.get(`${this.path}`, authMiddleware, this.getUser);
-    this.router.put(`${this.path}`, authMiddleware, validate(editUserValidation), this.editUser);
+    this.router.get(`${this.path}`, authMiddleware(), this.getUser);
+    this.router.put(`${this.path}`, authMiddleware(), validate(editUserValidation), this.editUser);
   }
 
   private registerUser: RequestHandler<never, UserResponse, UserRegisterRequest> = async (
