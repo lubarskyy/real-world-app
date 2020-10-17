@@ -29,6 +29,7 @@ export const initFollowModel = (sequelize: Sequelize): void => {
       followerId: {
         type: DataTypes.UUID,
         allowNull: false,
+        unique: 'uniquePairIndex',
         validate: {
           notEmpty: true,
         },
@@ -36,6 +37,7 @@ export const initFollowModel = (sequelize: Sequelize): void => {
       followingId: {
         type: DataTypes.UUID,
         allowNull: false,
+        unique: 'uniquePairIndex',
         validate: {
           notEmpty: true,
         },

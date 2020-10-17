@@ -18,6 +18,8 @@ interface AuthMiddlewareOptions {
   optional?: boolean;
 }
 
+// TODO: check for user presence in db, he might be already gone but the token is still valid
+
 export const authMiddleware: (options?: AuthMiddlewareOptions) => RequestHandler = (options) => async (
   request,
   _,
