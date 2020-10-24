@@ -24,8 +24,8 @@ export class UsersController implements Controller {
   private initializeRoutes(): void {
     this.router.post(`${this.path}`, validate(reqisterUserValidation), this.registerUser);
     this.router.post(`${this.path}/login`, validate(loginUserValidation), this.loginUser);
-    this.router.get(`${this.path}`, authMiddleware(), this.getUser);
-    this.router.put(`${this.path}`, authMiddleware(), validate(editUserValidation), this.editUser);
+    this.router.get(`${this.path}`, authMiddleware(), this.fetchUser);
+    this.router.put(`${this.path}`, authMiddleware(), validate(editUserValidation), this.updateUser);
   }
 
   private registerUser: RequestHandler<never, UserResponse, UserRegisterRequest> = async (
@@ -79,7 +79,7 @@ export class UsersController implements Controller {
     }
   };
 
-  private getUser: RequestHandler<never, UserResponse, never> = async (request, response, next): Promise<void> => {
+  private fetchUser: RequestHandler<never, UserResponse, never> = async (request, response, next): Promise<void> => {
     const { currentUser } = request;
 
     try {
@@ -100,7 +100,7 @@ export class UsersController implements Controller {
     }
   };
 
-  private editUser: RequestHandler<never, UserResponse, UserEditRequest> = async (
+  private updateUser: RequestHandler<never, UserResponse, UserEditRequest> = async (
     request,
     response,
     next,

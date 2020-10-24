@@ -1,4 +1,5 @@
-import { Sequelize, Model, DataTypes } from 'sequelize';
+import { Sequelize, Model, Association, DataTypes, HasManyAddAssociationMixin } from 'sequelize';
+import { Article } from '../articles';
 
 export type UserAttributes = {
   id: string;
@@ -8,8 +9,8 @@ export type UserAttributes = {
   bio?: string | null;
   image?: string | null;
 };
-
 export type UserCreationAttributes = Omit<UserAttributes, 'id'>;
+
 export type UserPayload = Omit<UserAttributes, 'password'>;
 export type ProfilePayload = Pick<UserAttributes, 'username' | 'bio' | 'image'>;
 
@@ -23,6 +24,10 @@ export class User extends Model<UserAttributes, UserCreationAttributes> implemen
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
+
+  public static associations: {
+    articles: Association<User, Article>;
+  };
 
   public createUserPayload(): UserPayload {
     return {
@@ -84,4 +89,14 @@ export const initUserModel = (sequelize: Sequelize): void => {
     },
     { sequelize, tableName: 'Users' },
   );
+};
+
+export const initUserAssociations = () => {
+  User.hasMany(Article, {
+    foreignKey: {
+      name: 'author',
+      allowNull: false,
+    },
+    as: 'articles',
+  });
 };

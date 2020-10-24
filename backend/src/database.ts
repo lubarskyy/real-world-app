@@ -1,11 +1,12 @@
 import { Sequelize } from 'sequelize';
 
-type Initializer = (sequelize: Sequelize) => void;
+type ModelInitializer = (sequelize: Sequelize) => void;
+type AssociationInitializer = () => void;
 
 export class Database {
   public connection: Sequelize;
 
-  constructor(initializers: Initializer[]) {
+  constructor(modelInitializers: ModelInitializer[], associationInitializers: AssociationInitializer[]) {
     this.connection = new Sequelize({
       host: process.env.POSTGRES_HOST,
       port: Number(process.env.POSTGRES_PORT),
@@ -16,8 +17,12 @@ export class Database {
       quoteIdentifiers: false,
     });
 
-    for (const initializer of initializers) {
-      initializer(this.connection);
+    for (const modelInitializer of modelInitializers) {
+      modelInitializer(this.connection);
+    }
+
+    for (const associationInitializer of associationInitializers) {
+      associationInitializer();
     }
   }
 

@@ -1,4 +1,4 @@
-import { UserAttributes, UserPayload, ProfilePayload } from '../users';
+import { UserAttributes, ProfilePayload } from '../users';
 
 export type ProfileParams = {
   username: UserAttributes['username'];

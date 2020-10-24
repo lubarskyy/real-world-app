@@ -2,13 +2,22 @@ import bodyParser from 'body-parser';
 import { Application } from './app';
 import { Database } from './database';
 import { AuthenticationService } from './services';
-import { initUserModel, UsersController } from './domain/users';
+import { initUserModel, initUserAssociations, UsersController } from './domain/users';
 import { initFollowModel, ProfilesController } from './domain/profiles';
+import { initArticleModel, initArticleAssociations, ArticlesController } from './domain/articles';
 
-const initializers = [initUserModel, initFollowModel];
-const database = new Database(initializers);
+/**
+ * Database
+ */
+const modelInitializers = [initUserModel, initFollowModel, initArticleModel];
+const associationInitializers = [initUserAssociations, initArticleAssociations];
 
-const controllers = [new UsersController(AuthenticationService), new ProfilesController()];
+const database = new Database(modelInitializers, associationInitializers);
+
+/**
+ * Application
+ */
+const controllers = [new UsersController(AuthenticationService), new ProfilesController(), new ArticlesController()];
 const middlewares = [bodyParser.json()];
 
 const server = new Application(controllers, middlewares, process.env.EXPRESS_SERVER_PORT);
