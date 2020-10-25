@@ -2,6 +2,7 @@ import { Sequelize, Model, DataTypes, Association, BelongsToGetAssociationMixin 
 import { User, UserAttributes } from '../users';
 
 export type ArticleAttributes = {
+  id: string;
   slug: string;
   title: string;
   description: string;
@@ -9,17 +10,18 @@ export type ArticleAttributes = {
   tagList?: string[];
   favoritesCount?: number;
 };
-export type ArticleCreationAttributes = Omit<ArticleAttributes, 'favoritesCount'> & ArticleAssociations;
+export type ArticleCreationAttributes = Omit<ArticleAttributes, 'id' | 'favoritesCount'> & ArticleAssociations;
 
 type ArticleAssociations = {
   author: UserAttributes['id'];
 };
-export type ArticlePayload = ArticleAttributes & {
+export type ArticlePayload = Omit<ArticleAttributes, 'id'> & {
   createdAt: Article['createdAt'];
   updatedAt: Article['updatedAt'];
 };
 
 export class Article extends Model<ArticleAttributes, ArticleCreationAttributes> implements ArticleAttributes {
+  public id!: ArticleAttributes['id'];
   public slug!: ArticleAttributes['slug'];
   public title!: ArticleAttributes['title'];
   public description!: ArticleAttributes['description'];
@@ -54,9 +56,17 @@ export class Article extends Model<ArticleAttributes, ArticleCreationAttributes>
 export const initArticleModel = (sequelize: Sequelize): void => {
   Article.init(
     {
+      id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true,
+      },
       slug: {
         type: DataTypes.STRING(60),
-        primaryKey: true,
+        allowNull: false,
+        validate: {
+          notEmpty: true,
+        },
       },
       title: {
         type: DataTypes.STRING(50),

@@ -9,6 +9,10 @@ export type ArticleCreateRequest = {
   article: Pick<ArticleAttributes, 'title' | 'description' | 'body' | 'tagList'>;
 };
 
+export type ArticleUpdateRequest = {
+  article: Partial<Pick<ArticleAttributes, 'title' | 'description' | 'body'>>;
+};
+
 export type ArticleResponse = {
   article: ArticlePayload & {
     favorited: boolean;
