@@ -98,5 +98,6 @@ export const initUserAssociations = () => {
       allowNull: false,
     },
     as: 'articles',
+    onDelete: 'CASCADE',
   });
 };

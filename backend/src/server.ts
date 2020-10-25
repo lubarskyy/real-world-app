@@ -4,12 +4,12 @@ import { Database } from './database';
 import { AuthenticationService } from './services';
 import { initUserModel, initUserAssociations, UsersController } from './domain/users';
 import { initFollowModel, ProfilesController } from './domain/profiles';
-import { initArticleModel, initArticleAssociations, ArticlesController } from './domain/articles';
+import { initArticleModel, initFavouriteModel, initArticleAssociations, ArticlesController } from './domain/articles';
 
 /**
  * Database
  */
-const modelInitializers = [initUserModel, initFollowModel, initArticleModel];
+const modelInitializers = [initUserModel, initFollowModel, initArticleModel, initFavouriteModel];
 const associationInitializers = [initUserAssociations, initArticleAssociations];
 
 const database = new Database(modelInitializers, associationInitializers);
