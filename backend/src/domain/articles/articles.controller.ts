@@ -23,6 +23,7 @@ export class ArticlesController implements Controller {
     this.router.post(`${this.path}`, authMiddleware(), validate(createArticleValidation), this.createArticle);
     this.router.get(`${this.path}/:slug`, authMiddleware({ optional: true }), this.fetchArticle);
     this.router.put(`${this.path}/:slug`, authMiddleware(), validate(updateArticleValidation), this.updateArticle);
+    this.router.delete(`${this.path}/:slug`, authMiddleware(), this.deleteArticle);
   }
 
   private createArticle: RequestHandler<never, ArticleResponse, ArticleCreateRequest, never> = async (
@@ -135,6 +136,24 @@ export class ArticlesController implements Controller {
             },
           },
         });
+      } else {
+        next(new NotFoundException("Article doesn't exist."));
+      }
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private deleteArticle: RequestHandler<ArticleParams, never, never, never> = async (
+    request,
+    response,
+    next,
+  ): Promise<void> => {
+    const { slug } = request.params;
+
+    try {
+      if (await Article.destroy({ where: { slug } })) {
+        response.status(200).send();
       } else {
         next(new NotFoundException("Article doesn't exist."));
       }
