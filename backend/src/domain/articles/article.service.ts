@@ -108,9 +108,73 @@ export class ArticleService {
     }
   };
 
-  public deleteArticle = async (request: Request<ArticleParams, never, never, never>): Promise<number> => {
+  public deleteArticle = async (request: Request<ArticleParams, never, never, never>): Promise<boolean> => {
     const { slug } = request.params;
 
-    return await Article.destroy({ where: { slug }, limit: 1 });
+    return Boolean(await Article.destroy({ where: { slug }, limit: 1 }));
+  };
+
+  public favoriteArticle = async (
+    request: Request<ArticleParams, never, never, never>,
+  ): Promise<ArticleResponse | null> => {
+    const { currentUser } = request;
+    const { slug } = request.params;
+
+    const article = await Article.findOne({ where: { slug } });
+
+    if (article) {
+      const user = await article.getUser();
+
+      await Favourite.create({ favouriteSource: currentUser!.id, favouriteTarget: user.id });
+
+      const isFollowing = Boolean(
+        await Follow.findOne({ where: { followerId: currentUser!.id, followingId: user.id } }),
+      );
+
+      return {
+        article: {
+          ...article.createArticlePayload(),
+          favorited: true,
+          author: {
+            ...user.createProfilePayload(),
+            following: isFollowing,
+          },
+        },
+      };
+    } else {
+      return null;
+    }
+  };
+
+  public unfavoriteArticle = async (
+    request: Request<ArticleParams, never, never, never>,
+  ): Promise<ArticleResponse | null> => {
+    const { currentUser } = request;
+    const { slug } = request.params;
+
+    const article = await Article.findOne({ where: { slug } });
+
+    if (article) {
+      const user = await article.getUser();
+
+      await Favourite.destroy({ where: { favouriteSource: currentUser!.id, favouriteTarget: user.id } });
+
+      const isFollowing = Boolean(
+        await Follow.findOne({ where: { followerId: currentUser!.id, followingId: user.id } }),
+      );
+
+      return {
+        article: {
+          ...article.createArticlePayload(),
+          favorited: false,
+          author: {
+            ...user.createProfilePayload(),
+            following: isFollowing,
+          },
+        },
+      };
+    } else {
+      return null;
+    }
   };
 }

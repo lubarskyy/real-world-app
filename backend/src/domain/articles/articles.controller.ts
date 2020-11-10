@@ -26,6 +26,9 @@ export class ArticlesController implements Controller {
     this.router.get(`${this.path}/:slug`, authMiddleware({ optional: true }), this.fetchArticle);
     this.router.put(`${this.path}/:slug`, authMiddleware(), validate(updateArticleValidation), this.updateArticle);
     this.router.delete(`${this.path}/:slug`, authMiddleware(), this.deleteArticle);
+
+    this.router.post(`${this.path}/:slug/favorite`, authMiddleware(), this.favoriteArticle);
+    this.router.delete(`${this.path}/:slug/favorite`, authMiddleware(), this.unfavoriteArticle);
   }
 
   private createArticle: RequestHandler<never, ArticleResponse, ArticleCreateRequest, never> = async (
@@ -84,10 +87,46 @@ export class ArticlesController implements Controller {
     next,
   ): Promise<void> => {
     try {
-      const deletedArticlesCount = await this.articleService.deleteArticle(request);
+      const isArticleDeleted = await this.articleService.deleteArticle(request);
 
-      if (deletedArticlesCount) {
+      if (isArticleDeleted) {
         response.status(200).send();
+      } else {
+        next(this.articleNotFound);
+      }
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private favoriteArticle: RequestHandler<ArticleParams, ArticleResponse, never, never> = async (
+    request,
+    response,
+    next,
+  ): Promise<void> => {
+    try {
+      const favouritedArticle = await this.articleService.favoriteArticle(request);
+
+      if (favouritedArticle) {
+        response.send(favouritedArticle);
+      } else {
+        next(this.articleNotFound);
+      }
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private unfavoriteArticle: RequestHandler<ArticleParams, ArticleResponse, never, never> = async (
+    request,
+    response,
+    next,
+  ): Promise<void> => {
+    try {
+      const unfavouritedArticle = await this.articleService.unfavoriteArticle(request);
+
+      if (unfavouritedArticle) {
+        response.send(unfavouritedArticle);
       } else {
         next(this.articleNotFound);
       }
