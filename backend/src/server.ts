@@ -4,7 +4,13 @@ import { Database } from './database';
 import { AuthenticationService } from './services';
 import { initUserModel, initUserAssociations, UsersController } from './domain/users';
 import { initFollowModel, ProfilesController } from './domain/profiles';
-import { initArticleModel, initFavouriteModel, initArticleAssociations, ArticlesController } from './domain/articles';
+import {
+  initArticleModel,
+  initFavouriteModel,
+  initArticleAssociations,
+  ArticlesController,
+  ArticleService,
+} from './domain/articles';
 
 /**
  * Database
@@ -17,7 +23,11 @@ const database = new Database(modelInitializers, associationInitializers);
 /**
  * Application
  */
-const controllers = [new UsersController(AuthenticationService), new ProfilesController(), new ArticlesController()];
+const controllers = [
+  new UsersController(AuthenticationService),
+  new ProfilesController(),
+  new ArticlesController(ArticleService),
+];
 const middlewares = [bodyParser.json()];
 
 const server = new Application(controllers, middlewares, process.env.EXPRESS_SERVER_PORT);

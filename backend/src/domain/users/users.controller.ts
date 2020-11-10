@@ -6,15 +6,15 @@ import { NotFoundException } from '../../exceptions';
 import { User } from './user.model';
 import { reqisterUserValidation, loginUserValidation, editUserValidation } from './user.validation';
 
-import type { AuthenticationService } from '../../services';
 import type { Controller } from '../../interfaces';
+import type { AuthenticationService } from '../../services';
 import type { UserRegisterRequest, UserLoginRequest, UserEditRequest, UserResponse } from './user.types';
 
 export class UsersController implements Controller {
   public path: Controller['path'] = '/users';
   public router: Controller['router'] = Router();
 
-  private authService: typeof AuthenticationService;
+  private readonly authService: typeof AuthenticationService;
 
   constructor(authService: typeof AuthenticationService) {
     this.authService = authService;

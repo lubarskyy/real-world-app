@@ -2,20 +2,22 @@ import { Router, RequestHandler } from 'express';
 import { validate } from 'express-validation';
 import { authMiddleware } from '../../middlewares';
 import { NotFoundException } from '../../exceptions';
-import { slugify } from '../../helpers';
-import { Follow } from '../profiles';
-import { Article } from './article.model';
-import { Favourite } from './favourite.model';
 import { createArticleValidation, updateArticleValidation } from './article.validation';
 
 import type { Controller } from '../../interfaces';
+import type { ArticleService } from './article.service';
 import type { ArticleParams, ArticleCreateRequest, ArticleUpdateRequest, ArticleResponse } from './article.types';
 
 export class ArticlesController implements Controller {
   public path: Controller['path'] = '/articles';
   public router: Controller['router'] = Router();
 
-  constructor() {
+  private readonly articleService: ArticleService;
+  private readonly articleNotFound: NotFoundException;
+
+  constructor(articleService: typeof ArticleService) {
+    this.articleService = new articleService();
+    this.articleNotFound = new NotFoundException("Article doesn't exist.");
     this.initializeRoutes();
   }
 
@@ -31,28 +33,10 @@ export class ArticlesController implements Controller {
     response,
     next,
   ): Promise<void> => {
-    const { currentUser } = request;
-    const payload = request.body.article;
-
     try {
-      const article = await Article.create({
-        ...payload,
-        slug: slugify(payload.title),
-        author: currentUser!.id,
-      });
+      const createdArticle = await this.articleService.createArticle(request);
 
-      const user = await article.getUser();
-
-      response.send({
-        article: {
-          ...article.createArticlePayload(),
-          favorited: false,
-          author: {
-            ...user.createProfilePayload(),
-            following: false,
-          },
-        },
-      });
+      response.send(createdArticle);
     } catch (error) {
       next(error);
     }
@@ -63,33 +47,13 @@ export class ArticlesController implements Controller {
     response,
     next,
   ): Promise<void> => {
-    const { currentUser } = request;
-    const { slug } = request.params;
-
     try {
-      const article = await Article.findOne({ where: { slug } });
-      const user = await article?.getUser();
+      const fetchedArticle = await this.articleService.fetchArticle(request);
 
-      if (article && user) {
-        const isFollowing = currentUser
-          ? Boolean(await Follow.findOne({ where: { followerId: currentUser.id, followingId: user.id } }))
-          : false;
-        const isFavorited = currentUser
-          ? Boolean(await Favourite.findOne({ where: { favouriteSource: currentUser.id, favouriteTarget: user.id } }))
-          : false;
-
-        response.send({
-          article: {
-            ...article.createArticlePayload(),
-            favorited: isFavorited,
-            author: {
-              ...user.createProfilePayload(),
-              following: isFollowing,
-            },
-          },
-        });
+      if (fetchedArticle) {
+        response.send(fetchedArticle);
       } else {
-        next(new NotFoundException("Article doesn't exist."));
+        next(this.articleNotFound);
       }
     } catch (error) {
       next(error);
@@ -101,43 +65,13 @@ export class ArticlesController implements Controller {
     response,
     next,
   ): Promise<void> => {
-    const { currentUser } = request;
-    const { slug } = request.params;
-    const payload = request.body.article;
-
     try {
-      const article = await Article.findOne({ where: { slug } });
+      const updatedArticle = await this.articleService.updateArticle(request);
 
-      if (article) {
-        const user = await article.getUser();
-        const isTitleChanged = payload.title ? article.title !== payload.title : false;
-
-        await article
-          .set({
-            ...payload,
-            ...(isTitleChanged && { slug: slugify(payload.title!) }),
-          })
-          .save();
-
-        const isFollowing = Boolean(
-          await Follow.findOne({ where: { followerId: currentUser!.id, followingId: user.id } }),
-        );
-        const isFavorited = Boolean(
-          await Favourite.findOne({ where: { favouriteSource: currentUser!.id, favouriteTarget: user.id } }),
-        );
-
-        response.send({
-          article: {
-            ...article.createArticlePayload(),
-            favorited: isFavorited,
-            author: {
-              ...user.createProfilePayload(),
-              following: isFollowing,
-            },
-          },
-        });
+      if (updatedArticle) {
+        response.send(updatedArticle);
       } else {
-        next(new NotFoundException("Article doesn't exist."));
+        next(this.articleNotFound);
       }
     } catch (error) {
       next(error);
@@ -149,13 +83,13 @@ export class ArticlesController implements Controller {
     response,
     next,
   ): Promise<void> => {
-    const { slug } = request.params;
-
     try {
-      if (await Article.destroy({ where: { slug } })) {
+      const deletedArticlesCount = await this.articleService.deleteArticle(request);
+
+      if (deletedArticlesCount) {
         response.status(200).send();
       } else {
-        next(new NotFoundException("Article doesn't exist."));
+        next(this.articleNotFound);
       }
     } catch (error) {
       next(error);
