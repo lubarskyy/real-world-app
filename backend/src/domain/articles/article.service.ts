@@ -48,7 +48,7 @@ export class ArticleService {
         ? Boolean(await Follow.findOne({ where: { followerId: currentUser.id, followingId: user.id } }))
         : false;
       const isFavorited = currentUser
-        ? Boolean(await Favourite.findOne({ where: { favouriteSource: currentUser.id, favouriteTarget: user.id } }))
+        ? Boolean(await Favourite.findOne({ where: { favouriteSource: currentUser.id, favouriteTarget: article.id } }))
         : false;
 
       return {
@@ -90,7 +90,7 @@ export class ArticleService {
         await Follow.findOne({ where: { followerId: currentUser!.id, followingId: user.id } }),
       );
       const isFavorited = Boolean(
-        await Favourite.findOne({ where: { favouriteSource: currentUser!.id, favouriteTarget: user.id } }),
+        await Favourite.findOne({ where: { favouriteSource: currentUser!.id, favouriteTarget: article.id } }),
       );
 
       return {
@@ -125,7 +125,7 @@ export class ArticleService {
     if (article) {
       const user = await article.getUser();
 
-      await Favourite.create({ favouriteSource: currentUser!.id, favouriteTarget: user.id });
+      await Favourite.create({ favouriteSource: currentUser!.id, favouriteTarget: article.id });
 
       const isFollowing = Boolean(
         await Follow.findOne({ where: { followerId: currentUser!.id, followingId: user.id } }),
@@ -157,7 +157,7 @@ export class ArticleService {
     if (article) {
       const user = await article.getUser();
 
-      await Favourite.destroy({ where: { favouriteSource: currentUser!.id, favouriteTarget: user.id } });
+      await Favourite.destroy({ where: { favouriteSource: currentUser!.id, favouriteTarget: article.id } });
 
       const isFollowing = Boolean(
         await Follow.findOne({ where: { followerId: currentUser!.id, followingId: user.id } }),
