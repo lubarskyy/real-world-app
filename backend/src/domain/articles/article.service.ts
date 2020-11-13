@@ -16,7 +16,7 @@ export class ArticleService {
     const article = await Article.create({
       ...payload,
       slug: slugify(payload.title),
-      author: currentUser!.id,
+      authorId: currentUser!.id,
     });
 
     const user = await article.getUser();
@@ -39,13 +39,11 @@ export class ArticleService {
     const { currentUser } = request;
     const { slug } = request.params;
 
-    const article = await Article.findOne({ where: { slug } });
+    const article = await Article.findOne({ where: { slug }, include: Article.associations.user });
 
     if (article) {
-      const user = await article.getUser();
-
       const isFollowing = currentUser
-        ? Boolean(await Follow.findOne({ where: { followerId: currentUser.id, followingId: user.id } }))
+        ? Boolean(await Follow.findOne({ where: { followerId: currentUser.id, followingId: article.user!.id } }))
         : false;
       const isFavorited = currentUser
         ? Boolean(await Favourite.findOne({ where: { favouriteSource: currentUser.id, favouriteTarget: article.id } }))
@@ -56,7 +54,7 @@ export class ArticleService {
           ...article.createArticlePayload(),
           favorited: isFavorited,
           author: {
-            ...user.createProfilePayload(),
+            ...article.user!.createProfilePayload(),
             following: isFollowing,
           },
         },
@@ -73,10 +71,12 @@ export class ArticleService {
     const { slug } = request.params;
     const payload = request.body.article;
 
-    const article = await Article.findOne({ where: { slug } });
+    const article = await Article.findOne({
+      where: { slug, authorId: currentUser!.id },
+      include: Article.associations.user,
+    });
 
     if (article) {
-      const user = await article.getUser();
       const hasTitleChanged = payload.title ? payload.title !== article.title : false;
 
       await article
@@ -87,7 +87,7 @@ export class ArticleService {
         .save();
 
       const isFollowing = Boolean(
-        await Follow.findOne({ where: { followerId: currentUser!.id, followingId: user.id } }),
+        await Follow.findOne({ where: { followerId: currentUser!.id, followingId: article.user!.id } }),
       );
       const isFavorited = Boolean(
         await Favourite.findOne({ where: { favouriteSource: currentUser!.id, favouriteTarget: article.id } }),
@@ -98,7 +98,7 @@ export class ArticleService {
           ...article.createArticlePayload(),
           favorited: isFavorited,
           author: {
-            ...user.createProfilePayload(),
+            ...article.user!.createProfilePayload(),
             following: isFollowing,
           },
         },
@@ -109,9 +109,10 @@ export class ArticleService {
   };
 
   public deleteArticle = async (request: Request<ArticleParams, never, never, never>): Promise<boolean> => {
+    const { currentUser } = request;
     const { slug } = request.params;
 
-    return Boolean(await Article.destroy({ where: { slug }, limit: 1 }));
+    return Boolean(await Article.destroy({ where: { slug, authorId: currentUser!.id }, limit: 1 }));
   };
 
   public favoriteArticle = async (
@@ -120,15 +121,16 @@ export class ArticleService {
     const { currentUser } = request;
     const { slug } = request.params;
 
-    const article = await Article.findOne({ where: { slug } });
+    const article = await Article.findOne({ where: { slug }, include: Article.associations.user });
 
     if (article) {
-      const user = await article.getUser();
-
       await Favourite.create({ favouriteSource: currentUser!.id, favouriteTarget: article.id });
 
+      await article.increment('favoritesCount');
+      await article.reload();
+
       const isFollowing = Boolean(
-        await Follow.findOne({ where: { followerId: currentUser!.id, followingId: user.id } }),
+        await Follow.findOne({ where: { followerId: currentUser!.id, followingId: article.user!.id } }),
       );
 
       return {
@@ -136,7 +138,7 @@ export class ArticleService {
           ...article.createArticlePayload(),
           favorited: true,
           author: {
-            ...user.createProfilePayload(),
+            ...article.user!.createProfilePayload(),
             following: isFollowing,
           },
         },
@@ -152,15 +154,16 @@ export class ArticleService {
     const { currentUser } = request;
     const { slug } = request.params;
 
-    const article = await Article.findOne({ where: { slug } });
+    const article = await Article.findOne({ where: { slug }, include: Article.associations.user });
 
     if (article) {
-      const user = await article.getUser();
-
       await Favourite.destroy({ where: { favouriteSource: currentUser!.id, favouriteTarget: article.id } });
 
+      await article.decrement('favoritesCount');
+      await article.reload();
+
       const isFollowing = Boolean(
-        await Follow.findOne({ where: { followerId: currentUser!.id, followingId: user.id } }),
+        await Follow.findOne({ where: { followerId: currentUser!.id, followingId: article.user!.id } }),
       );
 
       return {
@@ -168,7 +171,7 @@ export class ArticleService {
           ...article.createArticlePayload(),
           favorited: false,
           author: {
-            ...user.createProfilePayload(),
+            ...article.user!.createProfilePayload(),
             following: isFollowing,
           },
         },

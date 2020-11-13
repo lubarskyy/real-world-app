@@ -9,13 +9,14 @@ export type ArticleAttributes = {
   body: string;
   tagList?: string[];
   favoritesCount?: number;
+  // association foreign key
+  authorId?: UserAttributes['id'];
 };
-export type ArticleCreationAttributes = Omit<ArticleAttributes, 'id' | 'favoritesCount'> & ArticleAssociations;
+export type ArticleCreationAttributes = Omit<ArticleAttributes, 'id' | 'favoritesCount'> & {
+  authorId: UserAttributes['id'];
+};
 
-type ArticleAssociations = {
-  author: UserAttributes['id'];
-};
-export type ArticlePayload = Omit<ArticleAttributes, 'id'> & {
+export type ArticlePayload = Omit<ArticleAttributes, 'id' | 'authorId'> & {
   createdAt: Article['createdAt'];
   updatedAt: Article['updatedAt'];
 };
@@ -28,10 +29,12 @@ export class Article extends Model<ArticleAttributes, ArticleCreationAttributes>
   public body!: ArticleAttributes['body'];
   public tagList: ArticleAttributes['tagList'];
   public favoritesCount: ArticleAttributes['favoritesCount'];
-  public author!: ArticleAssociations['author'];
+  public authorId: ArticleAttributes['authorId'];
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
+
+  public readonly user?: User;
 
   public static associations: {
     user: Association<Article, User>;
@@ -105,7 +108,7 @@ export const initArticleModel = (sequelize: Sequelize): void => {
 export const initArticleAssociations = () => {
   Article.belongsTo(User, {
     foreignKey: {
-      name: 'author',
+      name: 'authorId',
       allowNull: false,
     },
     as: 'user',

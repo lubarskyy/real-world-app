@@ -25,6 +25,8 @@ export class User extends Model<UserAttributes, UserCreationAttributes> implemen
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
+  public readonly articles?: Article[];
+
   public static associations: {
     articles: Association<User, Article>;
   };
@@ -94,7 +96,7 @@ export const initUserModel = (sequelize: Sequelize): void => {
 export const initUserAssociations = () => {
   User.hasMany(Article, {
     foreignKey: {
-      name: 'author',
+      name: 'authorId',
       allowNull: false,
     },
     as: 'articles',
