@@ -35,6 +35,10 @@ export const authMiddleware: (options?: AuthMiddlewareOptions) => RequestHandler
       return next();
     }
 
+    if (options?.optional && !token) {
+      return next();
+    }
+
     if (!token) {
       return next(unauthedException);
     }

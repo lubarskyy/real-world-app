@@ -6,7 +6,14 @@ import { createArticleValidation, updateArticleValidation } from './article.vali
 
 import type { Controller } from '../../interfaces';
 import type { ArticleService } from './article.service';
-import type { ArticleParams, ArticleCreateRequest, ArticleUpdateRequest, ArticleResponse } from './article.types';
+import type {
+  ArticlePathParams,
+  ArticleQueryParams,
+  ArticleCreateRequest,
+  ArticleUpdateRequest,
+  ArticleResponse,
+  ArticlesResponse,
+} from './article.types';
 
 export class ArticlesController implements Controller {
   public path: Controller['path'] = '/articles';
@@ -22,7 +29,9 @@ export class ArticlesController implements Controller {
   }
 
   private initializeRoutes(): void {
-    this.router.post(`${this.path}`, authMiddleware(), validate(createArticleValidation), this.createArticle);
+    this.router.get(this.path, authMiddleware({ optional: true }), this.fetchArticles);
+
+    this.router.post(this.path, authMiddleware(), validate(createArticleValidation), this.createArticle);
     this.router.get(`${this.path}/:slug`, authMiddleware({ optional: true }), this.fetchArticle);
     this.router.put(`${this.path}/:slug`, authMiddleware(), validate(updateArticleValidation), this.updateArticle);
     this.router.delete(`${this.path}/:slug`, authMiddleware(), this.deleteArticle);
@@ -30,6 +39,20 @@ export class ArticlesController implements Controller {
     this.router.post(`${this.path}/:slug/favorite`, authMiddleware(), this.favoriteArticle);
     this.router.delete(`${this.path}/:slug/favorite`, authMiddleware(), this.unfavoriteArticle);
   }
+
+  private fetchArticles: RequestHandler<never, ArticlesResponse, never, ArticleQueryParams> = async (
+    request,
+    response,
+    next,
+  ): Promise<void> => {
+    try {
+      const fetchedArticles = await this.articleService.fetchArticles(request);
+
+      response.send(fetchedArticles);
+    } catch (error) {
+      next(error);
+    }
+  };
 
   private createArticle: RequestHandler<never, ArticleResponse, ArticleCreateRequest, never> = async (
     request,
@@ -45,7 +68,7 @@ export class ArticlesController implements Controller {
     }
   };
 
-  private fetchArticle: RequestHandler<ArticleParams, ArticleResponse, never, never> = async (
+  private fetchArticle: RequestHandler<ArticlePathParams, ArticleResponse, never, never> = async (
     request,
     response,
     next,
@@ -63,7 +86,7 @@ export class ArticlesController implements Controller {
     }
   };
 
-  private updateArticle: RequestHandler<ArticleParams, ArticleResponse, ArticleUpdateRequest, never> = async (
+  private updateArticle: RequestHandler<ArticlePathParams, ArticleResponse, ArticleUpdateRequest, never> = async (
     request,
     response,
     next,
@@ -81,7 +104,7 @@ export class ArticlesController implements Controller {
     }
   };
 
-  private deleteArticle: RequestHandler<ArticleParams, never, never, never> = async (
+  private deleteArticle: RequestHandler<ArticlePathParams, never, never, never> = async (
     request,
     response,
     next,
@@ -99,7 +122,7 @@ export class ArticlesController implements Controller {
     }
   };
 
-  private favoriteArticle: RequestHandler<ArticleParams, ArticleResponse, never, never> = async (
+  private favoriteArticle: RequestHandler<ArticlePathParams, ArticleResponse, never, never> = async (
     request,
     response,
     next,
@@ -117,7 +140,7 @@ export class ArticlesController implements Controller {
     }
   };
 
-  private unfavoriteArticle: RequestHandler<ArticleParams, ArticleResponse, never, never> = async (
+  private unfavoriteArticle: RequestHandler<ArticlePathParams, ArticleResponse, never, never> = async (
     request,
     response,
     next,

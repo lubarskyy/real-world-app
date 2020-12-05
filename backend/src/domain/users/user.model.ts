@@ -1,4 +1,4 @@
-import { Sequelize, Model, Association, DataTypes, HasManyAddAssociationMixin } from 'sequelize';
+import { Sequelize, Model, Association, DataTypes } from 'sequelize';
 import { Article } from '../articles';
 
 export type UserAttributes = {

@@ -22,10 +22,10 @@ export class UsersController implements Controller {
   }
 
   private initializeRoutes(): void {
-    this.router.post(`${this.path}`, validate(reqisterUserValidation), this.registerUser);
+    this.router.post(this.path, validate(reqisterUserValidation), this.registerUser);
     this.router.post(`${this.path}/login`, validate(loginUserValidation), this.loginUser);
-    this.router.get(`${this.path}`, authMiddleware(), this.fetchUser);
-    this.router.put(`${this.path}`, authMiddleware(), validate(editUserValidation), this.updateUser);
+    this.router.get(this.path, authMiddleware(), this.fetchUser);
+    this.router.put(this.path, authMiddleware(), validate(editUserValidation), this.updateUser);
   }
 
   private registerUser: RequestHandler<never, UserResponse, UserRegisterRequest> = async (

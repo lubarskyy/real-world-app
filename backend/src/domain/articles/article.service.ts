@@ -1,14 +1,139 @@
+import { Op } from 'sequelize';
 import { Request } from 'express';
 import { slugify } from '../../helpers';
+import { User } from '../users';
 import { Follow } from '../profiles';
 import { Article } from './article.model';
 import { Favourite } from './favourite.model';
 
-import type { ArticleParams, ArticleCreateRequest, ArticleUpdateRequest, ArticleResponse } from './article.types';
+import type {
+  ArticlePathParams,
+  ArticleQueryParams,
+  ArticleCreateRequest,
+  ArticleUpdateRequest,
+  ExtendedArticlePayload,
+  ArticleResponse,
+  ArticlesResponse,
+} from './article.types';
+
+// TODO: consider moving follow and favourite to user entity - as array of ids
 
 export class ArticleService {
+  private isFavorited = async (currentUser: Request['currentUser'], article: Article): Promise<boolean> => {
+    return currentUser
+      ? Boolean(await Favourite.findOne({ where: { favouriteSource: currentUser.id, favouriteTarget: article.id } }))
+      : false;
+  };
+
+  private isFollowing = async (currentUser: Request['currentUser'], author: User): Promise<boolean> => {
+    return currentUser
+      ? Boolean(await Follow.findOne({ where: { followerId: currentUser.id, followingId: author.id } }))
+      : false;
+  };
+
+  private createExtendedArticlePayload = async (
+    currentUser: Request['currentUser'],
+    article: Article,
+  ): Promise<ExtendedArticlePayload> => {
+    const favorited = await this.isFavorited(currentUser, article);
+    const following = await this.isFollowing(currentUser, article.user!);
+
+    return {
+      ...article.createArticlePayload(),
+      favorited,
+      author: {
+        ...article.user!.createProfilePayload(),
+        following,
+      },
+    };
+  };
+
+  private createArticlesResponse = async (
+    currentUser: Request['currentUser'],
+    fetchedArticles: {
+      rows: Article[];
+      count: number;
+    },
+  ): Promise<ArticlesResponse> => ({
+    articles: await Promise.all(
+      fetchedArticles.rows.map((article) => this.createExtendedArticlePayload(currentUser, article)),
+    ),
+    articlesCount: fetchedArticles.count,
+  });
+
+  public fetchArticles = async (
+    request: Request<never, never, never, ArticleQueryParams>,
+  ): Promise<ArticlesResponse> => {
+    const { currentUser } = request;
+    const { tag, author: authorUsername, favorited: favoritedByUsername, limit, offset } = request.query;
+
+    const emptyResponse = {
+      articles: [],
+      articlesCount: 0,
+    };
+
+    if (tag) {
+      const fetchedArticles = await Article.findAndCountAll({
+        where: { tagList: { [Op.contains]: [tag] } },
+        limit,
+        offset,
+        order: [['createdAt', 'DESC']],
+        include: Article.associations.user,
+      });
+
+      return this.createArticlesResponse(currentUser, fetchedArticles);
+    }
+
+    if (authorUsername) {
+      const fetchedArticles = await Article.findAndCountAll({
+        limit,
+        offset,
+        order: [['createdAt', 'DESC']],
+        include: {
+          association: Article.associations.user,
+          where: {
+            username: authorUsername,
+          },
+        },
+      });
+
+      return this.createArticlesResponse(currentUser, fetchedArticles);
+    }
+
+    if (favoritedByUsername) {
+      const user = await User.findOne({ where: { username: favoritedByUsername } });
+
+      if (user) {
+        const favourites = await Favourite.findAll({
+          where: { favouriteSource: user.id },
+        });
+
+        const fetchedArticles = await Article.findAndCountAll({
+          where: { id: favourites.map((favourite) => favourite.favouriteTarget) },
+          limit,
+          offset,
+          order: [['createdAt', 'DESC']],
+          include: Article.associations.user,
+        });
+
+        return this.createArticlesResponse(currentUser, fetchedArticles);
+      }
+
+      return emptyResponse;
+    }
+
+    const fetchedArticles = await Article.findAndCountAll({
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']],
+      include: Article.associations.user,
+    });
+
+    return fetchedArticles.count ? this.createArticlesResponse(currentUser, fetchedArticles) : emptyResponse;
+  };
+
   public createArticle = async (
-    request: Request<ArticleParams, never, ArticleCreateRequest, never>,
+    request: Request<ArticlePathParams, never, ArticleCreateRequest, never>,
   ): Promise<ArticleResponse> => {
     const { currentUser } = request;
     const payload = request.body.article;
@@ -34,38 +159,22 @@ export class ArticleService {
   };
 
   public fetchArticle = async (
-    request: Request<ArticleParams, never, never, never>,
+    request: Request<ArticlePathParams, never, never, never>,
   ): Promise<ArticleResponse | null> => {
     const { currentUser } = request;
     const { slug } = request.params;
 
     const article = await Article.findOne({ where: { slug }, include: Article.associations.user });
 
-    if (article) {
-      const isFollowing = currentUser
-        ? Boolean(await Follow.findOne({ where: { followerId: currentUser.id, followingId: article.user!.id } }))
-        : false;
-      const isFavorited = currentUser
-        ? Boolean(await Favourite.findOne({ where: { favouriteSource: currentUser.id, favouriteTarget: article.id } }))
-        : false;
-
-      return {
-        article: {
-          ...article.createArticlePayload(),
-          favorited: isFavorited,
-          author: {
-            ...article.user!.createProfilePayload(),
-            following: isFollowing,
-          },
-        },
-      };
-    } else {
-      return null;
-    }
+    return article
+      ? {
+          article: await this.createExtendedArticlePayload(currentUser, article),
+        }
+      : null;
   };
 
   public updateArticle = async (
-    request: Request<ArticleParams, never, ArticleUpdateRequest, never>,
+    request: Request<ArticlePathParams, never, ArticleUpdateRequest, never>,
   ): Promise<ArticleResponse | null> => {
     const { currentUser } = request;
     const { slug } = request.params;
@@ -86,29 +195,15 @@ export class ArticleService {
         })
         .save();
 
-      const isFollowing = Boolean(
-        await Follow.findOne({ where: { followerId: currentUser!.id, followingId: article.user!.id } }),
-      );
-      const isFavorited = Boolean(
-        await Favourite.findOne({ where: { favouriteSource: currentUser!.id, favouriteTarget: article.id } }),
-      );
-
       return {
-        article: {
-          ...article.createArticlePayload(),
-          favorited: isFavorited,
-          author: {
-            ...article.user!.createProfilePayload(),
-            following: isFollowing,
-          },
-        },
+        article: await this.createExtendedArticlePayload(currentUser, article),
       };
     } else {
       return null;
     }
   };
 
-  public deleteArticle = async (request: Request<ArticleParams, never, never, never>): Promise<boolean> => {
+  public deleteArticle = async (request: Request<ArticlePathParams, never, never, never>): Promise<boolean> => {
     const { currentUser } = request;
     const { slug } = request.params;
 
@@ -116,7 +211,7 @@ export class ArticleService {
   };
 
   public favoriteArticle = async (
-    request: Request<ArticleParams, never, never, never>,
+    request: Request<ArticlePathParams, never, never, never>,
   ): Promise<ArticleResponse | null> => {
     const { currentUser } = request;
     const { slug } = request.params;
@@ -129,9 +224,7 @@ export class ArticleService {
       await article.increment('favoritesCount');
       await article.reload();
 
-      const isFollowing = Boolean(
-        await Follow.findOne({ where: { followerId: currentUser!.id, followingId: article.user!.id } }),
-      );
+      const following = await this.isFollowing(currentUser, article.user!);
 
       return {
         article: {
@@ -139,7 +232,7 @@ export class ArticleService {
           favorited: true,
           author: {
             ...article.user!.createProfilePayload(),
-            following: isFollowing,
+            following,
           },
         },
       };
@@ -149,7 +242,7 @@ export class ArticleService {
   };
 
   public unfavoriteArticle = async (
-    request: Request<ArticleParams, never, never, never>,
+    request: Request<ArticlePathParams, never, never, never>,
   ): Promise<ArticleResponse | null> => {
     const { currentUser } = request;
     const { slug } = request.params;
@@ -162,9 +255,7 @@ export class ArticleService {
       await article.decrement('favoritesCount');
       await article.reload();
 
-      const isFollowing = Boolean(
-        await Follow.findOne({ where: { followerId: currentUser!.id, followingId: article.user!.id } }),
-      );
+      const following = await this.isFollowing(currentUser, article.user!);
 
       return {
         article: {
@@ -172,7 +263,7 @@ export class ArticleService {
           favorited: false,
           author: {
             ...article.user!.createProfilePayload(),
-            following: isFollowing,
+            following,
           },
         },
       };
