@@ -20,11 +20,11 @@ export class ArticlesController implements Controller {
   public router: Controller['router'] = Router();
 
   private readonly articleService: ArticleService;
-  private readonly articleNotFound: NotFoundException;
+  private readonly articleNotFoundException: NotFoundException;
 
   constructor(articleService: typeof ArticleService) {
     this.articleService = new articleService();
-    this.articleNotFound = new NotFoundException("Article doesn't exist.");
+    this.articleNotFoundException = new NotFoundException("Article doesn't exist.");
     this.initializeRoutes();
   }
 
@@ -79,7 +79,7 @@ export class ArticlesController implements Controller {
       if (fetchedArticle) {
         response.send(fetchedArticle);
       } else {
-        next(this.articleNotFound);
+        next(this.articleNotFoundException);
       }
     } catch (error) {
       next(error);
@@ -97,7 +97,7 @@ export class ArticlesController implements Controller {
       if (updatedArticle) {
         response.send(updatedArticle);
       } else {
-        next(this.articleNotFound);
+        next(this.articleNotFoundException);
       }
     } catch (error) {
       next(error);
@@ -115,7 +115,7 @@ export class ArticlesController implements Controller {
       if (isArticleDeleted) {
         response.status(200).send();
       } else {
-        next(this.articleNotFound);
+        next(this.articleNotFoundException);
       }
     } catch (error) {
       next(error);
@@ -133,7 +133,7 @@ export class ArticlesController implements Controller {
       if (favouritedArticle) {
         response.send(favouritedArticle);
       } else {
-        next(this.articleNotFound);
+        next(this.articleNotFoundException);
       }
     } catch (error) {
       next(error);
@@ -151,7 +151,7 @@ export class ArticlesController implements Controller {
       if (unfavouritedArticle) {
         response.send(unfavouritedArticle);
       } else {
-        next(this.articleNotFound);
+        next(this.articleNotFoundException);
       }
     } catch (error) {
       next(error);

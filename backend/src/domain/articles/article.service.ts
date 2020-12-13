@@ -1,6 +1,7 @@
 import { Op, FindAndCountOptions } from 'sequelize';
 import { Request } from 'express';
 import { slugify } from '../../helpers';
+import { UnprocessableEntityException } from '../../exceptions';
 import { User } from '../users';
 import { Follow } from '../profiles';
 import { Article, ArticleAttributes } from './article.model';
@@ -238,7 +239,13 @@ export class ArticleService {
     const article = await Article.findOne({ where: { slug }, include: Article.associations.user });
 
     if (article) {
-      await Favourite.destroy({ where: { favouriteSource: currentUser!.id, favouriteTarget: article.id } });
+      const destroyedFavouriteCount = await Favourite.destroy({
+        where: { favouriteSource: currentUser!.id, favouriteTarget: article.id },
+      });
+
+      if (!destroyedFavouriteCount) {
+        throw new UnprocessableEntityException('You cannot unfavourite this Article.');
+      }
 
       await article.decrement('favoritesCount');
       await article.reload();
