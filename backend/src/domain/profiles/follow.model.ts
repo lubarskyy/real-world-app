@@ -3,16 +3,16 @@ import { UserAttributes } from '../users';
 
 export type FollowAttributes = {
   id: string;
-  followerId: UserAttributes['id'];
-  followingId: UserAttributes['id'];
+  followSource: UserAttributes['id'];
+  followTarget: UserAttributes['id'];
 };
 
 export type FollowCreationAttributes = Omit<FollowAttributes, 'id'>;
 
 export class Follow extends Model<FollowAttributes, FollowCreationAttributes> implements FollowAttributes {
   public id!: FollowAttributes['id'];
-  public followerId!: FollowAttributes['followerId'];
-  public followingId!: FollowAttributes['followingId'];
+  public followSource!: FollowAttributes['followSource'];
+  public followTarget!: FollowAttributes['followTarget'];
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -26,7 +26,7 @@ export const initFollowModel = (sequelize: Sequelize): void => {
         defaultValue: DataTypes.UUIDV4,
         primaryKey: true,
       },
-      followerId: {
+      followSource: {
         type: DataTypes.UUID,
         allowNull: false,
         unique: 'uniquePairIndex',
@@ -34,7 +34,7 @@ export const initFollowModel = (sequelize: Sequelize): void => {
           notEmpty: true,
         },
       },
-      followingId: {
+      followTarget: {
         type: DataTypes.UUID,
         allowNull: false,
         unique: 'uniquePairIndex',

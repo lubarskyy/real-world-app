@@ -10,6 +10,7 @@ import { Favourite } from './favourite.model';
 import type {
   ArticlePathParams,
   ArticleQueryParams,
+  ArticleFeedQueryParams,
   ArticleCreateRequest,
   ArticleUpdateRequest,
   ExtendedArticlePayload,
@@ -20,6 +21,11 @@ import type {
 // TODO: consider moving follow and favourite to user entity - as an array of ids
 
 export class ArticleService {
+  private readonly emptyArticlesResponse: ArticlesResponse = {
+    articles: [],
+    articlesCount: 0,
+  };
+
   private isFavorited = async (currentUser: Request['currentUser'], article: Article): Promise<boolean> => {
     return currentUser
       ? Boolean(await Favourite.findOne({ where: { favouriteSource: currentUser.id, favouriteTarget: article.id } }))
@@ -28,7 +34,7 @@ export class ArticleService {
 
   private isFollowing = async (currentUser: Request['currentUser'], author: User): Promise<boolean> => {
     return currentUser
-      ? Boolean(await Follow.findOne({ where: { followerId: currentUser.id, followingId: author.id } }))
+      ? Boolean(await Follow.findOne({ where: { followSource: currentUser.id, followTarget: author.id } }))
       : false;
   };
 
@@ -51,15 +57,15 @@ export class ArticleService {
 
   private createArticlesResponse = async (
     currentUser: Request['currentUser'],
-    fetchedArticles: {
+    articles: {
       rows: Article[];
       count: number;
     },
   ): Promise<ArticlesResponse> => ({
     articles: await Promise.all(
-      fetchedArticles.rows.map((article) => this.createExtendedArticlePayload(currentUser, article)),
+      articles.rows.map((article) => this.createExtendedArticlePayload(currentUser, article)),
     ),
-    articlesCount: fetchedArticles.count,
+    articlesCount: articles.count,
   });
 
   public fetchArticles = async (
@@ -67,11 +73,6 @@ export class ArticleService {
   ): Promise<ArticlesResponse> => {
     const { currentUser } = request;
     const { tag, author: authorUsername, favorited: favoritedByUsername, limit = 20, offset = 0 } = request.query;
-
-    const emptyArticlesResponse = {
-      articles: [],
-      articlesCount: 0,
-    };
 
     let queryOptions: FindAndCountOptions<ArticleAttributes> = {
       where: {},
@@ -103,7 +104,7 @@ export class ArticleService {
       const user = await User.findOne({ where: { username: favoritedByUsername } });
 
       if (!user) {
-        return emptyArticlesResponse;
+        return this.emptyArticlesResponse;
       }
 
       const favourites = await Favourite.findAll({
@@ -116,9 +117,32 @@ export class ArticleService {
       };
     }
 
-    const fetchedArticles = await Article.findAndCountAll(queryOptions);
+    const articles = await Article.findAndCountAll(queryOptions);
 
-    return fetchedArticles.count ? this.createArticlesResponse(currentUser, fetchedArticles) : emptyArticlesResponse;
+    return articles.count ? this.createArticlesResponse(currentUser, articles) : this.emptyArticlesResponse;
+  };
+
+  public fetchFeedArticles = async (
+    request: Request<never, never, never, ArticleFeedQueryParams>,
+  ): Promise<ArticlesResponse> => {
+    const { currentUser } = request;
+    const { limit = 20, offset = 0 } = request.query;
+    // query for all followed profiles by currentUser
+    // query for all articles where authoer id is in the followed array
+
+    const follows = await Follow.findAll({ where: { followSource: currentUser!.id } });
+
+    const feedArticles = await Article.findAndCountAll({
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']],
+      include: {
+        association: Article.associations.user,
+        where: { id: follows.map((follow) => follow.followTarget) },
+      },
+    });
+
+    return feedArticles.count ? this.createArticlesResponse(currentUser, feedArticles) : this.emptyArticlesResponse;
   };
 
   public createArticle = async (

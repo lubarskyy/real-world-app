@@ -5,12 +5,15 @@ export type ArticlePathParams = {
   slug: ArticleAttributes['slug'];
 };
 
-export type ArticleQueryParams = {
+export type ArticleFeedQueryParams = {
+  limit?: number;
+  offset?: number;
+};
+
+export type ArticleQueryParams = ArticleFeedQueryParams & {
   tag?: string;
   author?: string;
   favorited?: string;
-  limit?: number;
-  offset?: number;
 };
 
 export type ArticleCreateRequest = {

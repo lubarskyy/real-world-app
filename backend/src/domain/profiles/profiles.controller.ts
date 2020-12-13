@@ -34,7 +34,7 @@ export class ProfilesController implements Controller {
 
       if (user) {
         const isFollowing = currentUser
-          ? Boolean(await Follow.findOne({ where: { followerId: currentUser.id, followingId: user.id } }))
+          ? Boolean(await Follow.findOne({ where: { followSource: currentUser.id, followTarget: user.id } }))
           : false;
 
         response.send({
@@ -67,7 +67,7 @@ export class ProfilesController implements Controller {
       }
 
       if (user) {
-        const follow = await Follow.create({ followerId: currentUser!.id, followingId: user.id });
+        const follow = await Follow.create({ followSource: currentUser!.id, followTarget: user.id });
 
         response.send({
           profile: {
@@ -101,7 +101,7 @@ export class ProfilesController implements Controller {
       if (
         user &&
         currentUser &&
-        (await Follow.destroy({ where: { followerId: currentUser.id, followingId: user.id } }))
+        (await Follow.destroy({ where: { followSource: currentUser.id, followTarget: user.id } }))
       ) {
         response.send({
           profile: {

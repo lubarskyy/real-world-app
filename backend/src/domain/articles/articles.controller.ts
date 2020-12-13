@@ -9,6 +9,7 @@ import type { ArticleService } from './article.service';
 import type {
   ArticlePathParams,
   ArticleQueryParams,
+  ArticleFeedQueryParams,
   ArticleCreateRequest,
   ArticleUpdateRequest,
   ArticleResponse,
@@ -30,6 +31,7 @@ export class ArticlesController implements Controller {
 
   private initializeRoutes(): void {
     this.router.get(this.path, authMiddleware({ optional: true }), this.fetchArticles);
+    this.router.get(`${this.path}/feed`, authMiddleware(), this.fetchFeedArticles);
 
     this.router.post(this.path, authMiddleware(), validate(createArticleValidation), this.createArticle);
     this.router.get(`${this.path}/:slug`, authMiddleware({ optional: true }), this.fetchArticle);
@@ -49,6 +51,20 @@ export class ArticlesController implements Controller {
       const fetchedArticles = await this.articleService.fetchArticles(request);
 
       response.send(fetchedArticles);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private fetchFeedArticles: RequestHandler<never, ArticlesResponse, never, ArticleFeedQueryParams> = async (
+    request,
+    response,
+    next,
+  ): Promise<void> => {
+    try {
+      const fetchedFeedArticles = await this.articleService.fetchFeedArticles(request);
+
+      response.send(fetchedFeedArticles);
     } catch (error) {
       next(error);
     }
