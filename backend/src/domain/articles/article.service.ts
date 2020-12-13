@@ -1,9 +1,9 @@
-import { Op } from 'sequelize';
+import { Op, FindAndCountOptions } from 'sequelize';
 import { Request } from 'express';
 import { slugify } from '../../helpers';
 import { User } from '../users';
 import { Follow } from '../profiles';
-import { Article } from './article.model';
+import { Article, ArticleAttributes } from './article.model';
 import { Favourite } from './favourite.model';
 
 import type {
@@ -16,7 +16,7 @@ import type {
   ArticlesResponse,
 } from './article.types';
 
-// TODO: consider moving follow and favourite to user entity - as array of ids
+// TODO: consider moving follow and favourite to user entity - as an array of ids
 
 export class ArticleService {
   private isFavorited = async (currentUser: Request['currentUser'], article: Article): Promise<boolean> => {
@@ -65,71 +65,59 @@ export class ArticleService {
     request: Request<never, never, never, ArticleQueryParams>,
   ): Promise<ArticlesResponse> => {
     const { currentUser } = request;
-    const { tag, author: authorUsername, favorited: favoritedByUsername, limit, offset } = request.query;
+    const { tag, author: authorUsername, favorited: favoritedByUsername, limit = 20, offset = 0 } = request.query;
 
-    const emptyResponse = {
+    const emptyArticlesResponse = {
       articles: [],
       articlesCount: 0,
     };
 
-    if (tag) {
-      const fetchedArticles = await Article.findAndCountAll({
-        where: { tagList: { [Op.contains]: [tag] } },
-        limit,
-        offset,
-        order: [['createdAt', 'DESC']],
-        include: Article.associations.user,
-      });
+    let queryOptions: FindAndCountOptions<ArticleAttributes> = {
+      where: {},
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']],
+      include: {
+        association: Article.associations.user,
+      },
+    };
 
-      return this.createArticlesResponse(currentUser, fetchedArticles);
+    if (tag) {
+      queryOptions.where = {
+        ...queryOptions.where,
+        tagList: { [Op.contains]: [tag] },
+      };
     }
 
     if (authorUsername) {
-      const fetchedArticles = await Article.findAndCountAll({
-        limit,
-        offset,
-        order: [['createdAt', 'DESC']],
-        include: {
-          association: Article.associations.user,
-          where: {
-            username: authorUsername,
-          },
+      queryOptions.include = {
+        ...(queryOptions.include as object),
+        where: {
+          username: authorUsername,
         },
-      });
-
-      return this.createArticlesResponse(currentUser, fetchedArticles);
+      };
     }
 
     if (favoritedByUsername) {
       const user = await User.findOne({ where: { username: favoritedByUsername } });
 
-      if (user) {
-        const favourites = await Favourite.findAll({
-          where: { favouriteSource: user.id },
-        });
-
-        const fetchedArticles = await Article.findAndCountAll({
-          where: { id: favourites.map((favourite) => favourite.favouriteTarget) },
-          limit,
-          offset,
-          order: [['createdAt', 'DESC']],
-          include: Article.associations.user,
-        });
-
-        return this.createArticlesResponse(currentUser, fetchedArticles);
+      if (!user) {
+        return emptyArticlesResponse;
       }
 
-      return emptyResponse;
+      const favourites = await Favourite.findAll({
+        where: { favouriteSource: user.id },
+      });
+
+      queryOptions.where = {
+        ...queryOptions.where,
+        id: favourites.map((favourite) => favourite.favouriteTarget),
+      };
     }
 
-    const fetchedArticles = await Article.findAndCountAll({
-      limit,
-      offset,
-      order: [['createdAt', 'DESC']],
-      include: Article.associations.user,
-    });
+    const fetchedArticles = await Article.findAndCountAll(queryOptions);
 
-    return fetchedArticles.count ? this.createArticlesResponse(currentUser, fetchedArticles) : emptyResponse;
+    return fetchedArticles.count ? this.createArticlesResponse(currentUser, fetchedArticles) : emptyArticlesResponse;
   };
 
   public createArticle = async (

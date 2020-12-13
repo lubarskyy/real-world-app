@@ -1,10 +1,11 @@
 import { Sequelize, Model, DataTypes } from 'sequelize';
 import { UserAttributes } from '../users';
+import { ArticleAttributes } from '../articles';
 
 export type FavouriteAttributes = {
   id: string;
   favouriteSource: UserAttributes['id'];
-  favouriteTarget: UserAttributes['id'];
+  favouriteTarget: ArticleAttributes['id'];
 };
 
 export type FavouriteCreationAttributes = Omit<FavouriteAttributes, 'id'>;
