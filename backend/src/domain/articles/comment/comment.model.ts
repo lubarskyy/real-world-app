@@ -2,10 +2,6 @@ import { Sequelize, Model, DataTypes, Association, BelongsToGetAssociationMixin 
 import { User, UserAttributes } from '../../users';
 import { Article, ArticleAttributes } from '../article.model';
 
-// id, createdAt, updatedAt, body, author
-// association to user .hasOne
-// association to article .hasOne
-
 export type CommentAttributes = {
   id: string;
   body: string;

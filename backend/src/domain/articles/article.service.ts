@@ -1,7 +1,7 @@
 import { Op, FindAndCountOptions } from 'sequelize';
 import { Request } from 'express';
 import { slugify } from '../../helpers';
-import { UnprocessableEntityException } from '../../exceptions';
+import { UnprocessableEntityException, NotFoundException } from '../../exceptions';
 import { User } from '../users';
 import { Follow } from '../profiles';
 import { Article, ArticleAttributes } from './article.model';
@@ -10,6 +10,7 @@ import { Comment } from './comment';
 
 import type {
   ArticlePathParams,
+  ArticleCommentPathParams,
   ArticleQueryParams,
   ArticleFeedQueryParams,
   ArticleCreateRequest,
@@ -288,6 +289,25 @@ export class ArticleService {
       return {
         comments: [],
       };
+    }
+  };
+
+  public deleteArticleComment = async (
+    request: Request<ArticleCommentPathParams, never, never, never>,
+  ): Promise<boolean> => {
+    const { currentUser } = request;
+    const { slug, commentId } = request.params;
+
+    const article = await Article.findOne({ where: { slug } });
+
+    if (!article) {
+      throw new NotFoundException("Article doesn't exist.");
+    }
+
+    if (article.hasComment(commentId)) {
+      return Boolean(await Comment.destroy({ where: { id: commentId, authorId: currentUser!.id }, limit: 1 }));
+    } else {
+      return false;
     }
   };
 

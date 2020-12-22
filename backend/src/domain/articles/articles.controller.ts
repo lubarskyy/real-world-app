@@ -9,6 +9,7 @@ import type { Controller } from '../../interfaces';
 import type { ArticleService } from './article.service';
 import type {
   ArticlePathParams,
+  ArticleCommentPathParams,
   ArticleQueryParams,
   ArticleFeedQueryParams,
   ArticleCreateRequest,
@@ -24,10 +25,12 @@ export class ArticlesController implements Controller {
 
   private readonly articleService: ArticleService;
   private readonly articleNotFoundException: NotFoundException;
+  private readonly commentNotFoundException: NotFoundException;
 
   constructor(articleService: typeof ArticleService) {
     this.articleService = new articleService();
     this.articleNotFoundException = new NotFoundException("Article doesn't exist.");
+    this.commentNotFoundException = new NotFoundException("Comment doesn't exist.");
     this.initializeRoutes();
   }
 
@@ -47,6 +50,7 @@ export class ArticlesController implements Controller {
       this.createArticleComment,
     );
     this.router.get(`${this.path}/:slug/comments`, authMiddleware({ optional: true }), this.fetchArticleComments);
+    this.router.delete(`${this.path}/:slug/comments/:commentId`, authMiddleware(), this.deleteArticleComment);
 
     this.router.post(`${this.path}/:slug/favorite`, authMiddleware(), this.favoriteArticle);
     this.router.delete(`${this.path}/:slug/favorite`, authMiddleware(), this.unfavoriteArticle);
@@ -176,6 +180,24 @@ export class ArticlesController implements Controller {
       const fetchedComments = await this.articleService.fetchArticleComments(request);
 
       response.send(fetchedComments);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private deleteArticleComment: RequestHandler<ArticleCommentPathParams, never, never, never> = async (
+    request,
+    response,
+    next,
+  ): Promise<void> => {
+    try {
+      const isCommentDeleted = await this.articleService.deleteArticleComment(request);
+
+      if (isCommentDeleted) {
+        response.status(200).send();
+      } else {
+        next(this.commentNotFoundException);
+      }
     } catch (error) {
       next(error);
     }

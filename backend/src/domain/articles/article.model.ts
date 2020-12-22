@@ -5,6 +5,7 @@ import {
   Association,
   BelongsToGetAssociationMixin,
   HasManyGetAssociationsMixin,
+  HasManyHasAssociationMixin,
 } from 'sequelize';
 import { Comment, CommentAttributes } from './comment';
 import { User, UserAttributes } from '../users';
@@ -53,6 +54,7 @@ export class Article extends Model<ArticleAttributes, ArticleCreationAttributes>
 
   public getUser!: BelongsToGetAssociationMixin<User>;
   public getComments!: HasManyGetAssociationsMixin<Comment>;
+  public hasComment!: HasManyHasAssociationMixin<Comment, CommentAttributes['id']>;
 
   public createArticlePayload(): ArticlePayload {
     return {

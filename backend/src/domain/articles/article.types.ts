@@ -1,8 +1,13 @@
 import { ArticleAttributes, ArticlePayload } from './article.model';
+import { CommentAttributes } from './comment';
 import { ProfileResponse } from '../profiles';
 
 export type ArticlePathParams = {
   slug: ArticleAttributes['slug'];
+};
+
+export type ArticleCommentPathParams = ArticlePathParams & {
+  commentId: CommentAttributes['id'];
 };
 
 export type ArticleFeedQueryParams = {
