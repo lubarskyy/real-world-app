@@ -16,7 +16,7 @@ import type {
   ArticleResponse,
   ArticlesResponse,
 } from './article.types';
-import type { CommentCreateRequest, CommentResponse } from './comment';
+import type { CommentCreateRequest, CommentResponse, CommentsResponse } from './comment';
 
 export class ArticlesController implements Controller {
   public path: Controller['path'] = '/articles';
@@ -46,6 +46,7 @@ export class ArticlesController implements Controller {
       validate(createCommentValidation),
       this.createArticleComment,
     );
+    this.router.get(`${this.path}/:slug/comments`, authMiddleware({ optional: true }), this.fetchArticleComments);
 
     this.router.post(`${this.path}/:slug/favorite`, authMiddleware(), this.favoriteArticle);
     this.router.delete(`${this.path}/:slug/favorite`, authMiddleware(), this.unfavoriteArticle);
@@ -154,13 +155,27 @@ export class ArticlesController implements Controller {
     never
   > = async (request, response, next): Promise<void> => {
     try {
-      const createdComment = await this.articleService.createComment(request);
+      const createdComment = await this.articleService.createArticleComment(request);
 
       if (createdComment) {
         response.send(createdComment);
       } else {
         next(this.articleNotFoundException);
       }
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private fetchArticleComments: RequestHandler<ArticlePathParams, CommentsResponse, never, never> = async (
+    request,
+    response,
+    next,
+  ): Promise<void> => {
+    try {
+      const fetchedComments = await this.articleService.fetchArticleComments(request);
+
+      response.send(fetchedComments);
     } catch (error) {
       next(error);
     }

@@ -18,7 +18,7 @@ import type {
   ArticleResponse,
   ArticlesResponse,
 } from './article.types';
-import type { CommentCreateRequest, CommentResponse } from './comment';
+import type { CommentCreateRequest, CommentResponse, CommentsResponse } from './comment';
 
 // TODO: consider moving follow and favourite to user entity - as an array of ids
 
@@ -223,7 +223,7 @@ export class ArticleService {
     return Boolean(await Article.destroy({ where: { slug, authorId: currentUser!.id }, limit: 1 }));
   };
 
-  public createComment = async (
+  public createArticleComment = async (
     request: Request<ArticlePathParams, never, CommentCreateRequest, never>,
   ): Promise<CommentResponse | null> => {
     const { currentUser } = request;
@@ -251,6 +251,43 @@ export class ArticleService {
       };
     } else {
       return null;
+    }
+  };
+
+  public fetchArticleComments = async (
+    request: Request<ArticlePathParams, never, never, never>,
+  ): Promise<CommentsResponse> => {
+    const { currentUser } = request;
+    const { slug } = request.params;
+
+    const article = await Article.findOne({
+      where: { slug },
+      include: {
+        association: Article.associations.comments,
+        include: [Comment.associations.user],
+      },
+    });
+
+    if (article) {
+      return {
+        comments: await Promise.all(
+          article.comments!.map(async (comment) => {
+            const following = await this.isFollowing(currentUser, comment.user!);
+
+            return {
+              ...comment.createCommentPayload(),
+              author: {
+                ...comment.user!.createProfilePayload(),
+                following,
+              },
+            };
+          }),
+        ),
+      };
+    } else {
+      return {
+        comments: [],
+      };
     }
   };
 

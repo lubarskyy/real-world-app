@@ -5,8 +5,14 @@ export type CommentCreateRequest = {
   comment: Pick<CommentAttributes, 'body'>;
 };
 
+type ArticleComment = CommentPayload & {
+  author: ProfileResponse['profile'];
+};
+
 export type CommentResponse = {
-  comment: CommentPayload & {
-    author: ProfileResponse['profile'];
-  };
+  comment: ArticleComment;
+};
+
+export type CommentsResponse = {
+  comments: ArticleComment[];
 };
