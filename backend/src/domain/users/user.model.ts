@@ -1,5 +1,5 @@
 import { Sequelize, Model, Association, DataTypes } from 'sequelize';
-import { Article } from '../articles';
+import { Article, Comment } from '../articles';
 
 export type UserAttributes = {
   id: string;
@@ -26,9 +26,11 @@ export class User extends Model<UserAttributes, UserCreationAttributes> implemen
   public readonly updatedAt!: Date;
 
   public readonly articles?: Article[];
+  public readonly comments?: Comment[];
 
   public static associations: {
     articles: Association<User, Article>;
+    comments: Association<User, Comment>;
   };
 
   public createUserPayload(): UserPayload {
@@ -100,6 +102,15 @@ export const initUserAssociations = () => {
       allowNull: false,
     },
     as: 'articles',
+    onDelete: 'CASCADE',
+  });
+
+  User.hasMany(Comment, {
+    foreignKey: {
+      name: 'authorId',
+      allowNull: false,
+    },
+    as: 'comments',
     onDelete: 'CASCADE',
   });
 };

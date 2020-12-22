@@ -6,8 +6,10 @@ import { initUserModel, initUserAssociations, UsersController } from './domain/u
 import { initFollowModel, ProfilesController } from './domain/profiles';
 import {
   initArticleModel,
+  initCommentModel,
   initFavouriteModel,
   initArticleAssociations,
+  initCommentAssociations,
   ArticlesController,
   ArticleService,
 } from './domain/articles';
@@ -15,8 +17,8 @@ import {
 /**
  * Database
  */
-const modelInitializers = [initUserModel, initFollowModel, initArticleModel, initFavouriteModel];
-const associationInitializers = [initUserAssociations, initArticleAssociations];
+const modelInitializers = [initUserModel, initFollowModel, initArticleModel, initCommentModel, initFavouriteModel];
+const associationInitializers = [initUserAssociations, initArticleAssociations, initCommentAssociations];
 
 const database = new Database(modelInitializers, associationInitializers);
 

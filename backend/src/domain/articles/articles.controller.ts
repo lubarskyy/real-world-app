@@ -3,6 +3,7 @@ import { validate } from 'express-validation';
 import { authMiddleware } from '../../middlewares';
 import { NotFoundException } from '../../exceptions';
 import { createArticleValidation, updateArticleValidation } from './article.validation';
+import { createCommentValidation } from './comment';
 
 import type { Controller } from '../../interfaces';
 import type { ArticleService } from './article.service';
@@ -15,6 +16,7 @@ import type {
   ArticleResponse,
   ArticlesResponse,
 } from './article.types';
+import type { CommentCreateRequest, CommentResponse } from './comment';
 
 export class ArticlesController implements Controller {
   public path: Controller['path'] = '/articles';
@@ -37,6 +39,13 @@ export class ArticlesController implements Controller {
     this.router.get(`${this.path}/:slug`, authMiddleware({ optional: true }), this.fetchArticle);
     this.router.put(`${this.path}/:slug`, authMiddleware(), validate(updateArticleValidation), this.updateArticle);
     this.router.delete(`${this.path}/:slug`, authMiddleware(), this.deleteArticle);
+
+    this.router.post(
+      `${this.path}/:slug/comments`,
+      authMiddleware(),
+      validate(createCommentValidation),
+      this.createArticleComment,
+    );
 
     this.router.post(`${this.path}/:slug/favorite`, authMiddleware(), this.favoriteArticle);
     this.router.delete(`${this.path}/:slug/favorite`, authMiddleware(), this.unfavoriteArticle);
@@ -130,6 +139,25 @@ export class ArticlesController implements Controller {
 
       if (isArticleDeleted) {
         response.status(200).send();
+      } else {
+        next(this.articleNotFoundException);
+      }
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private createArticleComment: RequestHandler<
+    ArticlePathParams,
+    CommentResponse,
+    CommentCreateRequest,
+    never
+  > = async (request, response, next): Promise<void> => {
+    try {
+      const createdComment = await this.articleService.createComment(request);
+
+      if (createdComment) {
+        response.send(createdComment);
       } else {
         next(this.articleNotFoundException);
       }

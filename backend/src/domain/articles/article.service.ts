@@ -6,6 +6,7 @@ import { User } from '../users';
 import { Follow } from '../profiles';
 import { Article, ArticleAttributes } from './article.model';
 import { Favourite } from './favourite.model';
+import { Comment } from './comment';
 
 import type {
   ArticlePathParams,
@@ -17,6 +18,7 @@ import type {
   ArticleResponse,
   ArticlesResponse,
 } from './article.types';
+import type { CommentCreateRequest, CommentResponse } from './comment';
 
 // TODO: consider moving follow and favourite to user entity - as an array of ids
 
@@ -127,8 +129,6 @@ export class ArticleService {
   ): Promise<ArticlesResponse> => {
     const { currentUser } = request;
     const { limit = 20, offset = 0 } = request.query;
-    // query for all followed profiles by currentUser
-    // query for all articles where authoer id is in the followed array
 
     const follows = await Follow.findAll({ where: { followSource: currentUser!.id } });
 
@@ -221,6 +221,37 @@ export class ArticleService {
     const { slug } = request.params;
 
     return Boolean(await Article.destroy({ where: { slug, authorId: currentUser!.id }, limit: 1 }));
+  };
+
+  public createComment = async (
+    request: Request<ArticlePathParams, never, CommentCreateRequest, never>,
+  ): Promise<CommentResponse | null> => {
+    const { currentUser } = request;
+    const { slug } = request.params;
+    const { body } = request.body.comment;
+
+    const article = await Article.findOne({ where: { slug } });
+    const user = await User.findOne({ where: { id: currentUser!.id } });
+
+    if (article && user) {
+      const comment = await Comment.create({
+        body,
+        authorId: user.id,
+        articleId: article.id,
+      });
+
+      return {
+        comment: {
+          ...comment.createCommentPayload(),
+          author: {
+            ...user.createProfilePayload(),
+            following: false,
+          },
+        },
+      };
+    } else {
+      return null;
+    }
   };
 
   public favoriteArticle = async (

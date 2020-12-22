@@ -1,4 +1,12 @@
-import { Sequelize, Model, DataTypes, Association, BelongsToGetAssociationMixin } from 'sequelize';
+import {
+  Sequelize,
+  Model,
+  DataTypes,
+  Association,
+  BelongsToGetAssociationMixin,
+  HasManyGetAssociationsMixin,
+} from 'sequelize';
+import { Comment, CommentAttributes } from './comment';
 import { User, UserAttributes } from '../users';
 
 export type ArticleAttributes = {
@@ -9,8 +17,9 @@ export type ArticleAttributes = {
   body: string;
   tagList?: string[];
   favoritesCount?: number;
-  // association foreign key
+  // association foreign keys
   authorId?: UserAttributes['id'];
+  commentsIds?: CommentAttributes['id'][];
 };
 export type ArticleCreationAttributes = Omit<ArticleAttributes, 'id' | 'favoritesCount'> & {
   authorId: UserAttributes['id'];
@@ -35,12 +44,15 @@ export class Article extends Model<ArticleAttributes, ArticleCreationAttributes>
   public readonly updatedAt!: Date;
 
   public readonly user?: User;
+  public readonly comments?: Comment[];
 
   public static associations: {
     user: Association<Article, User>;
+    comments: Association<Article, Comment>;
   };
 
   public getUser!: BelongsToGetAssociationMixin<User>;
+  public getComments!: HasManyGetAssociationsMixin<Comment>;
 
   public createArticlePayload(): ArticlePayload {
     return {
@@ -112,5 +124,14 @@ export const initArticleAssociations = () => {
       allowNull: false,
     },
     as: 'user',
+  });
+
+  Article.hasMany(Comment, {
+    foreignKey: {
+      name: 'articleId',
+      allowNull: false,
+    },
+    as: 'comments',
+    onDelete: 'CASCADE',
   });
 };
